@@ -17,7 +17,7 @@ OC.Router = {
 		}
 	}),
 	generate:function(name, opt_params) {
-		if (!('routes' in this)) {
+		if (!window.TESTING && !('routes' in this)) {
 			if(this.routes_request.state() != 'resolved') {
 				console.warn('To avoid race conditions, please register a callback');// wait
 			}

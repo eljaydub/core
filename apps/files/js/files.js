@@ -218,7 +218,6 @@ $(document).ready(function() {
 	Files.displayEncryptionWarning();
 	Files.bindKeyboardShortcuts(document, jQuery);
 
-	FileList.postProcessList();
 	Files.setupDragAndDrop();
 
 	$('#file_action_panel').attr('activeAction', false);

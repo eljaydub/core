@@ -63,6 +63,54 @@ class Helper
 	}
 
 	/**
+	 * Formats the file info to be returned to the client.
+	 * @param array file info
+	 * @param string dir
+	 * @return array formatted file info
+	 */
+	public static function formatFileInfo($i, $dir) {
+		$entry = array();
+
+		$entry['date'] = \OCP\Util::formatDate($i['mtime']);
+		$entry['mtime'] = $i['mtime'] * 1000;
+		if (!isset($i['type'])) {
+			if ($i['mimetype'] === 'httpd/unix-directory') {
+				$i['type'] = 'dir';
+			}
+			else {
+				$i['type'] = 'file';
+			}
+		}
+		if ($i['type'] === 'file') {
+			$fileinfo = pathinfo($i['name']);
+			$entry['basename'] = $fileinfo['filename'];
+			if (!empty($fileinfo['extension'])) {
+				$entry['extension'] = '.' . $fileinfo['extension'];
+			} else {
+				$entry['extension'] = '';
+			}
+		}
+		// required by determineIcon()
+		$i['directory'] = $dir;
+		$i['isPreviewAvailable'] = \OC::$server->getPreviewManager()->isMimeSupported($i['mimetype']);
+		// only pick out the needed attributes
+		$entry['icon'] = \OCA\Files\Helper::determineIcon($i);
+			$entry['directory'] = $dir;
+		if ($i['isPreviewAvailable']) {
+			$entry['isPreviewAvailable'] = true;
+		}
+		$entry['directory'] = $i['directory'];
+		$entry['name'] = $i['name'];
+		$entry['permissions'] = $i['permissions'];
+		$entry['mimetype'] = $i['mimetype'];
+		$entry['size'] = $i['size'];
+		$entry['type'] = $i['type'];
+		$entry['etag'] = $i['etag'];
+		$entry['id'] = $i['fileid'];
+		return $entry;
+	}
+
+	/**
 	 * Retrieves the contents of the given directory and
 	 * returns it as a sorted array.
 	 * @param string $dir path to the directory
@@ -73,20 +121,7 @@ class Helper
 		$files = array();
 
 		foreach ($content as $i) {
-			$i['date'] = \OCP\Util::formatDate($i['mtime']);
-			if ($i['type'] === 'file') {
-				$fileinfo = pathinfo($i['name']);
-				$i['basename'] = $fileinfo['filename'];
-				if (!empty($fileinfo['extension'])) {
-					$i['extension'] = '.' . $fileinfo['extension'];
-				} else {
-					$i['extension'] = '';
-				}
-			}
-			$i['directory'] = $dir;
-			$i['isPreviewAvailable'] = \OC::$server->getPreviewManager()->isMimeSupported($i['mimetype']);
-			$i['icon'] = \OCA\Files\Helper::determineIcon($i);
-			$files[] = $i;
+			$files[] = self::formatFileInfo($i, $dir);
 		}
 
 		usort($files, array('\OCA\Files\Helper', 'fileCmp'));

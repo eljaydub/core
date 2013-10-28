@@ -129,18 +129,9 @@ if (strpos($dir, '..') === false) {
 						$error = $l->t('The target folder has been moved or deleted.');
 						$errorCode = 'targetnotfound';
 					} else {
-						$result[] = array('status' => 'success',
-							'mime' => $meta['mimetype'],
-							'mtime' => $meta['mtime'],
-							'size' => $meta['size'],
-							'id' => $meta['fileid'],
-							'name' => basename($target),
-							'etag' => $meta['etag'],
-							'originalname' => $files['tmp_name'][$i],
-							'uploadMaxFilesize' => $maxUploadFileSize,
-							'maxHumanFilesize' => $maxHumanFileSize,
-							'permissions' => $meta['permissions'] & $allowedPermissions
-						);
+						$data = \OCA\Files\Helper::formatFileInfo($meta, $dir);
+						$data['status'] = 'success';
+						$result[] = $data;
 					}
 
 				} else {
@@ -156,18 +147,9 @@ if (strpos($dir, '..') === false) {
 			if ($meta === false) {
 				$error = $l->t('Upload failed. Could not get file info.');
 			} else {
-				$result[] = array('status' => 'existserror',
-					'mime' => $meta['mimetype'],
-					'mtime' => $meta['mtime'],
-					'size' => $meta['size'],
-					'id' => $meta['fileid'],
-					'name' => basename($target),
-					'etag' => $meta['etag'],
-					'originalname' => $files['tmp_name'][$i],
-					'uploadMaxFilesize' => $maxUploadFileSize,
-					'maxHumanFilesize' => $maxHumanFileSize,
-					'permissions' => $meta['permissions'] & $allowedPermissions
-				);
+				$data = \OCA\Files\Helper::formatFileInfo($meta, $dir);
+				$data['status'] = 'existserror';
+				$result[] = $data;
 			}
 		}
 	}

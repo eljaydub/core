@@ -591,21 +591,7 @@ $(document).ready(function() {
 							{dir:$('#dir').val(), filename:name},
 							function(result) {
 								if (result.status === 'success') {
-									var date = new Date();
-									// TODO: ideally addFile should be able to receive
-									// all attributes and set them automatically,
-									// and also auto-load the preview
-									var tr = FileList.addFile(name, 0, date, false, hidden);
-									tr.attr('data-size', result.data.size);
-									tr.attr('data-mime', result.data.mime);
-									tr.attr('data-id', result.data.id);
-									tr.attr('data-etag', result.data.etag);
-									tr.find('.filesize').text(humanFileSize(result.data.size));
-									var path = getPathForPreview(name);
-									Files.lazyLoadPreview(path, result.data.mime, function(previewpath) {
-										tr.find('td.filename').attr('style','background-image:url('+previewpath+')');
-									}, null, null, result.data.etag);
-									FileActions.display(tr.find('td.filename'), true);
+									FileList.add(result.data, {hidden: hidden, addActions: true, insert: true});
 								} else {
 									OC.dialogs.alert(result.data.message, t('core', 'Could not create file'));
 								}
@@ -618,10 +604,7 @@ $(document).ready(function() {
 							{dir:$('#dir').val(), foldername:name},
 							function(result) {
 								if (result.status === 'success') {
-									var date=new Date();
-									FileList.addDir(name, 0, date, hidden);
-									var tr = FileList.findFileEl(name);
-									tr.attr('data-id', result.data.id);
+									FileList.add(result.data, {hidden: hidden, addActions: true, insert: true});
 								} else {
 									OC.dialogs.alert(result.data.message, t('core', 'Could not create folder'));
 								}
@@ -656,20 +639,10 @@ $(document).ready(function() {
 							}
 						});
 						eventSource.listen('success',function(data) {
-							var mime = data.mime;
-							var size = data.size;
-							var id = data.id;
+							var file = data;
 							$('#uploadprogressbar').fadeOut();
-							var date = new Date();
-							FileList.addFile(localName, size, date, false, hidden);
-							var tr = FileList.findFileEl(localName);
-							tr.data('mime', mime).data('id', id);
-							tr.attr('data-id', id);
-							var path = $('#dir').val()+'/'+localName;
-							Files.lazyLoadPreview(path, mime, function(previewpath) {
-								tr.find('td.filename').attr('style', 'background-image:url('+previewpath+')');
-							}, null, null, data.etag);
-							FileActions.display(tr.find('td.filename'), true);
+
+							FileList.add(file, {hidden: hidden, addActions: true, insert: true});
 						});
 						eventSource.listen('error',function(error) {
 							$('#uploadprogressbar').fadeOut();
