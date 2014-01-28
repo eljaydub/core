@@ -7,8 +7,7 @@ FileList.reload = function(){
 	$.ajax({
 		url: OC.filePath('files_trashbin','ajax','list.php'),
 		data: {
-			dir : $('#dir').val(),
-			breadcrumb: true
+			dir : $('#dir').val()
 		},
 		error: function(result) {
 			FileList.reloadCallback(result);

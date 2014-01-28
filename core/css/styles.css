@@ -908,6 +908,9 @@ div.crumb {
 	background: url('../img/breadcrumb.svg') no-repeat right center;
 	height: 44px;
 }
+div.crumb.hidden {
+	display: none;
+}
 div.crumb a,
 div.crumb span {
 	position: relative;

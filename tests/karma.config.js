@@ -40,8 +40,8 @@ module.exports = function(config) {
 	// these are required by all apps so always need to be loaded
 	// note that the loading order is important that's why they
 	// are specified in a separate file
-	var corePath = 'core/js/';
-	var coreFiles = require('../' + corePath + 'core.json').modules;
+	var corePath = 'core/';
+	var coreFiles = require('../' + corePath + 'js/core.json').modules;
 	var testCore = false;
 	var files = [];
 	var index;
@@ -55,20 +55,23 @@ module.exports = function(config) {
 	}
 
 	// extra test libs
-	files.push(corePath + 'tests/lib/sinon-1.7.3.js');
+	files.push(corePath + 'js/tests/lib/sinon-1.7.3.js');
 
 	// core mocks
-	files.push(corePath + 'tests/specHelper.js');
+	files.push(corePath + 'js/tests/specHelper.js');
+
+	// core CSS (for testing layout stuff)
+	files.push(corePath + 'css/*.css');
 
 	// add core files
 	for ( var i = 0; i < coreFiles.length; i++ ) {
-		files.push( corePath + coreFiles[i] );
+		files.push( corePath + 'js/' + coreFiles[i] );
 	}
 
 	// need to test the core app as well ?
 	if (testCore) {
 		// core tests
-		files.push(corePath + 'tests/specs/*.js');
+		files.push(corePath + 'js/tests/specs/*.js');
 	}
 
 	for ( var i = 0; i < appsToTest.length; i++ ) {

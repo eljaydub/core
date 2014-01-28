@@ -31,6 +31,7 @@ OCP\Util::addscript('files', 'file-upload');
 OCP\Util::addscript('files', 'jquery.iframe-transport');
 OCP\Util::addscript('files', 'jquery.fileupload');
 OCP\Util::addscript('files', 'jquery-visibility');
+OCP\Util::addscript('files', 'breadcrumb');
 OCP\Util::addscript('files', 'filelist');
 
 OCP\App::setActiveNavigationEntry('files_index');
@@ -67,14 +68,6 @@ if (\OC\Files\Cache\Upgrade::needUpgrade($user)) { //dont load anything if we ne
 	$needUpgrade = false;
 }
 
-// Make breadcrumb
-$breadcrumb = \OCA\Files\Helper::makeBreadcrumb($dir);
-
-// make breadcrumb und filelist markup
-$breadcrumbNav = new OCP\Template('files', 'part.breadcrumb', '');
-$breadcrumbNav->assign('breadcrumb', $breadcrumb);
-$breadcrumbNav->assign('baseURL', OCP\Util::linkTo('files', 'index.php') . '?dir=');
-
 $permissions = \OCA\Files\Helper::getDirPermissions($dir);
 
 if ($needUpgrade) {
@@ -105,7 +98,6 @@ if ($needUpgrade) {
 	OCP\Util::addscript('files', 'files');
 	OCP\Util::addscript('files', 'keyboardshortcuts');
 	$tmpl = new OCP\Template('files', 'index', 'user');
-	$tmpl->assign('breadcrumb', $breadcrumbNav->fetchPage());
 	$tmpl->assign('dir', $dir);
 	$tmpl->assign('isCreatable', $isCreatable);
 	$tmpl->assign('permissions', $permissions);

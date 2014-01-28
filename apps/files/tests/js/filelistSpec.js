@@ -19,7 +19,8 @@
 *
 */
 describe('FileList tests', function() {
-	var routerGenerateStub, testFiles, alertStub, notificationStub;
+	var routerGenerateStub, testFiles, alertStub, notificationStub,
+		pushStateStub;
 
 	beforeEach(function() {
 		// init horrible parameters
@@ -28,6 +29,10 @@ describe('FileList tests', function() {
 		$body.append('<input type="hidden" id="permissions" value="31"></input>');
 		// dummy files table
 		$body.append('<table id="filestable"></table>');
+
+		// prevents URL changes during tests
+		pushStateStub = sinon.stub(window.history, 'pushState');
+
 		routerGenerateStub = sinon.stub(OC.Router, 'generate', function(module, spec) {
 			if (spec && spec.file) {
 				return '/index.php/apps/files/' + module + spec.file;
@@ -82,16 +87,18 @@ describe('FileList tests', function() {
 			size: 250
 		}];
 
-		FileList.$el = $('#filestable');
-		FileList.$fileList = $('#fileList');
+		FileList.initialize();
 	});
 	afterEach(function() {
 		testFiles = undefined;
+		FileList.initialized = false;
+		FileList.isEmpty = true;
 
 		$('#dir, #permissions, #filestable').remove();
 		notificationStub.restore();
 		alertStub.restore();
 		routerGenerateStub.restore();
+		pushStateStub.restore();
 	});
 	describe('Getters', function() {
 		it('Returns the current directory', function() {
@@ -619,13 +626,10 @@ describe('FileList tests', function() {
 		});
 	});
 	describe('loading file list', function() {
-		var pushStateStub;
 		beforeEach(function() {
-			pushStateStub = sinon.stub(window.history, 'pushState');
 			var data = {
 				status: 'success',
-					data: {
-					breadcrumbs: '',
+				data: {
 					files: testFiles,
 					permissions: 31
 				}
@@ -637,15 +641,12 @@ describe('FileList tests', function() {
 					JSON.stringify(data)
 			]);
 		});
-		afterEach(function() {
-			pushStateStub.restore();
-		});
 		it('fetches file list from server and renders it when reload() is called', function() {
 			FileList.reload();
 			expect(fakeServer.requests.length).toEqual(1);
 			var url = fakeServer.requests[0].url;
 			var query = url.substr(url.indexOf('?') + 1);
-			expect(OC.parseQueryString(query)).toEqual({'dir': '/subdir', breadcrumb: 'true'});
+			expect(OC.parseQueryString(query)).toEqual({'dir': '/subdir'});
 			fakeServer.respond();
 			expect($('#fileList tr:not(.summary)').length).toEqual(4);
 			expect(FileList.findFileEl('One.txt').length).toEqual(1);
@@ -656,7 +657,7 @@ describe('FileList tests', function() {
 			expect(fakeServer.requests.length).toEqual(1);
 			var url = fakeServer.requests[0].url;
 			var query = url.substr(url.indexOf('?') + 1);
-			expect(OC.parseQueryString(query)).toEqual({'dir': '/anothersubdir', breadcrumb: 'true'});
+			expect(OC.parseQueryString(query)).toEqual({'dir': '/anothersubdir'});
 			fakeServer.respond();
 		});
 		it('switches to root dir when current directory does not exist', function() {
@@ -687,6 +688,119 @@ describe('FileList tests', function() {
 			expect(pushStateStub.calledOnce).toEqual(true);
 			expect(pushStateStub.getCall(0).args[0]).toEqual({dir: '/somedir'});
 			expect(pushStateStub.getCall(0).args[2]).toEqual(OC.webroot + '/index.php/apps/files?dir=/somedir');
+		});
+		it('refreshes breadcrumb after update', function() {
+			var setDirSpy = sinon.spy(FileList.breadcrumb, 'setDirectory');
+			FileList.changeDirectory('/anothersubdir');
+			fakeServer.respond();
+			expect(FileList.breadcrumb.setDirectory.calledOnce).toEqual(true);
+			expect(FileList.breadcrumb.setDirectory.calledWith('/anothersubdir')).toEqual(true);
+			setDirSpy.restore();
+		});
+	});
+	describe('breadcrumb events', function() {
+		beforeEach(function() {
+			var data = {
+				status: 'success',
+				data: {
+					files: testFiles,
+					permissions: 31
+				}
+			};
+			fakeServer.respondWith(/\/index\.php\/apps\/files\/ajax\/list.php\?dir=%2Fsubdir/, [
+					200, {
+						"Content-Type": "application/json"
+					},
+					JSON.stringify(data)
+			]);
+		});
+		it('clicking on root breadcrumb changes directory to root', function() {
+			FileList.changeDirectory('/subdir/two/three with space/four/five');
+			fakeServer.respond();
+			var changeDirStub = sinon.stub(FileList, 'changeDirectory');
+			FileList.breadcrumb.$el.find('.crumb:eq(0)').click();
+
+			expect(changeDirStub.calledOnce).toEqual(true);
+			expect(changeDirStub.getCall(0).args[0]).toEqual('/');
+			changeDirStub.restore();
+		});
+		it('clicking on breadcrumb changes directory', function() {
+			FileList.changeDirectory('/subdir/two/three with space/four/five');
+			fakeServer.respond();
+			var changeDirStub = sinon.stub(FileList, 'changeDirectory');
+			FileList.breadcrumb.$el.find('.crumb:eq(3)').click();
+
+			expect(changeDirStub.calledOnce).toEqual(true);
+			expect(changeDirStub.getCall(0).args[0]).toEqual('/subdir/two/three with space');
+			changeDirStub.restore();
+		});
+		it('dropping files on breadcrumb calls move operation', function() {
+			var request, query, testDir = '/subdir/two/three with space/four/five';
+			FileList.changeDirectory(testDir);
+			fakeServer.respond();
+			var $crumb = FileList.breadcrumb.$el.find('.crumb:eq(3)');
+			// no idea what this is but is required by the handler
+			var ui = {
+				helper: {
+					find: sinon.stub()
+				}
+			};
+			// returns a list of tr that were dragged
+			// FIXME: why are their attributes different than the
+			// regular file trs ?
+			ui.helper.find.returns([
+				$('<tr data-filename="One.txt" data-dir="' + testDir + '"></tr>'),
+				$('<tr data-filename="Two.jpg" data-dir="' + testDir + '"></tr>')
+			]);
+			// simulate drop event
+			FileList._onDropOnBreadCrumb.call($crumb, new $.Event('drop'), ui);
+
+			// will trigger two calls to move.php (first one was previous list.php)
+			expect(fakeServer.requests.length).toEqual(3);
+
+			request = fakeServer.requests[1];
+			expect(request.method).toEqual('POST');
+			expect(request.url).toEqual(OC.webroot + '/index.php/apps/files/ajax/move.php');
+			query = OC.parseQueryString(request.requestBody);
+			expect(query).toEqual({
+				target: '/subdir/two/three with space',
+				dir: testDir,
+				file: 'One.txt'
+			});
+
+			request = fakeServer.requests[2];
+			expect(request.method).toEqual('POST');
+			expect(request.url).toEqual(OC.webroot + '/index.php/apps/files/ajax/move.php');
+			query = OC.parseQueryString(request.requestBody);
+			expect(query).toEqual({
+				target: '/subdir/two/three with space',
+				dir: testDir,
+				file: 'Two.jpg'
+			});
+		});
+		it('dropping files on same dir breadcrumb does nothing', function() {
+			var request, query, testDir = '/subdir/two/three with space/four/five';
+			FileList.changeDirectory(testDir);
+			fakeServer.respond();
+			var $crumb = FileList.breadcrumb.$el.find('.crumb:last');
+			// no idea what this is but is required by the handler
+			var ui = {
+				helper: {
+					find: sinon.stub()
+				}
+			};
+			// returns a list of tr that were dragged
+			// FIXME: why are their attributes different than the
+			// regular file trs ?
+			ui.helper.find.returns([
+				$('<tr data-filename="One.txt" data-dir="' + testDir + '"></tr>'),
+				$('<tr data-filename="Two.jpg" data-dir="' + testDir + '"></tr>')
+			]);
+			// simulate drop event
+			FileList._onDropOnBreadCrumb.call($crumb, new $.Event('drop'), ui);
+
+			// no extra server request
+			expect(fakeServer.requests.length).toEqual(1);
 		});
 	});
 	it('returns correct download URL', function() {

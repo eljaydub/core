@@ -1,5 +1,4 @@
 <div id="controls">
-	<?php print_unescaped($_['breadcrumb']); ?>
 		<div class="actions creatable hidden">
 			<?php if(!isset($_['dirToken'])):?>
 			<div id="new" class="button">

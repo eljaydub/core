@@ -1,8 +1,96 @@
-FileList={
+/* global OC, FileList, Files, FileActions, BreadCrumb, t */
+window.FileList = {
 	isEmpty: true,
 	useUndo:true,
 	$el: $('#filestable'),
 	$fileList: $('#fileList'),
+	breadcrumb: null,
+	initialized: false,
+
+	/**
+	 * Initialize the file list and its components
+	 */
+	initialize: function() {
+		if (this.initialized) {
+			return;
+		}
+
+		// TODO: FileList should not know about global elements
+		this.$el = $('#filestable');
+		this.$fileList = $('#fileList');
+
+		this.breadcrumb = new BreadCrumb({
+			onClick: this._onClickBreadCrumb,
+			onDrop: this._onDropOnBreadCrumb
+		});
+
+		$('#controls').prepend(this.breadcrumb.$el);
+
+		$(window).resize(function() {
+			// TODO: debounce this ?
+			var width = $(this).width();
+			FileList.breadcrumb.resize(width, false);
+		});
+	},
+
+	/**
+	 * Event handler when clicking on a bread crumb
+	 */
+	_onClickBreadCrumb: function(e) {
+		var $el = $(e.target).closest('.crumb'),
+			$targetDir = $el.data('dir'),
+			isPublic = !!$('#isPublic').val();
+
+		if ($targetDir !== undefined && !isPublic) {
+			e.preventDefault();
+			FileList.changeDirectory($targetDir);
+		}
+	},
+
+	/**
+	 * Event handler when dropping on a breadcrumb
+	 */
+	_onDropOnBreadCrumb: function( event, ui ) {
+		var target=$(this).data('dir');
+		var dir = FileList.getCurrentDirectory();
+		while(dir.substr(0,1) === '/') {//remove extra leading /'s
+			dir=dir.substr(1);
+		}
+		dir = '/' + dir;
+		if (dir.substr(-1,1) !== '/') {
+			dir = dir + '/';
+		}
+		if (target === dir || target+'/' === dir) {
+			return;
+		}
+		var files = ui.helper.find('tr');
+		$(files).each(function(i,row) {
+			var dir = $(row).data('dir');
+			var file = $(row).data('filename');
+			//slapdash selector, tracking down our original element that the clone budded off of.
+			var origin = $('tr[data-id=' + $(row).data('origin') + ']');
+			var td = origin.children('td.filename');
+			var oldBackgroundImage = td.css('background-image');
+			td.css('background-image', 'url('+ OC.imagePath('core', 'loading.gif') + ')');
+			$.post(OC.filePath('files', 'ajax', 'move.php'), { dir: dir, file: file, target: target }, function(result) {
+				if (result) {
+					if (result.status === 'success') {
+						FileList.remove(file);
+						procesSelection();
+						$('#notification').hide();
+					} else {
+						$('#notification').hide();
+						$('#notification').text(result.data.message);
+						$('#notification').fadeIn();
+					}
+				} else {
+					OC.dialogs.alert(t('files', 'Error moving file'), t('files', 'Error'));
+				}
+				td.css('background-image', oldBackgroundImage);
+			});
+		});
+	},
+
 	/**
 	 * Returns the tr element for a given file name
 	 * @param fileName file name
@@ -290,8 +378,7 @@ FileList={
 		FileList._reloadCall = $.ajax({
 			url: OC.filePath('files','ajax','list.php'),
 			data: {
-				dir : $('#dir').val(),
-				breadcrumb: true
+				dir : $('#dir').val()
 			},
 			error: function(result) {
 				FileList.reloadCallback(result);
@@ -304,8 +391,8 @@ FileList={
 	reloadCallback: function(result) {
 		var $controls = $('#controls');
 
-		delete FileList._reloadCall;
-		FileList.hideMask();
+		delete this._reloadCall;
+		this.hideMask();
 
 		if (!result || result.status === 'error') {
 			OC.Notification.show(result.data.message);
@@ -314,7 +401,7 @@ FileList={
 
 		if (result.status === 404) {
 			// go back home
-			FileList.changeDirectory('/');
+			this.changeDirectory('/');
 			return;
 		}
 		// aborted ?
@@ -327,24 +414,11 @@ FileList={
 		Files.updateStorageStatistics(true);
 
 		if (result.data.permissions) {
-			FileList.setDirectoryPermissions(result.data.permissions);
+			this.setDirectoryPermissions(result.data.permissions);
 		}
 
-		if (typeof(result.data.breadcrumb) !== 'undefined') {
-			$controls.find('.crumb').remove();
-			$controls.prepend(result.data.breadcrumb);
-
-			var width = $(window).width();
-			Files.initBreadCrumbs();
-			Files.resizeBreadcrumbs(width, true);
-
-			// in case svg is not supported by the browser we need to execute the fallback mechanism
-			if (!SVGSupport()) {
-				replaceSVG();
-			}
-		}
-
-		FileList.setFiles(result.data.files);
+		this.setFiles(result.data.files);
+		this.breadcrumb.setDirectory(this.getCurrentDirectory());
 	},
 	setDirectoryPermissions: function(permissions) {
 		var isCreatable = (permissions & OC.PERMISSION_CREATE) !== 0;
@@ -1100,7 +1174,6 @@ $(document).ready(function() {
 
 $(document).ready(function() {
 	// correctly init elements (consider using a class instance in the future)
-	FileList.$el = $('#filestable');
-	FileList.$fileList = $('#fileList');
+	FileList.initialize();
 });
 

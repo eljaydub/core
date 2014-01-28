@@ -64,7 +64,9 @@ window.oc_appswebroots = {
 		$testArea = null;
 
 	beforeEach(function() {
-		$testArea = $('<div id="testArea" style="display: none"></div>');
+		// test area for elements that need absolute selector access or measure widths/heights
+		// which wouldn't work for detached or hidden elements
+		$testArea = $('<div id="testArea" style="position: absolute; width: 1280px; height: 800px; top: -3000px; left: -3000px;"></div>');
 		$('body').append($testArea);
 
 		OC.Router.routes = [];

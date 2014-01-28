@@ -457,28 +457,6 @@ $(document).ready(function() {
 		$('#file_upload_start').attr('multiple', 'multiple');
 	}
 
-	//if the breadcrumb is to long, start by replacing foldernames with '...' except for the current folder
-	var crumb=$('div.crumb').first();
-	while($('div.controls').height() > 40 && crumb.next('div.crumb').length > 0) {
-		crumb.children('a').text('...');
-		crumb = crumb.next('div.crumb');
-	}
-	//if that isn't enough, start removing items from the breacrumb except for the current folder and it's parent
-	var crumb = $('div.crumb').first();
-	var next = crumb.next('div.crumb');
-	while($('div.controls').height()>40 && next.next('div.crumb').length > 0) {
-		crumb.remove();
-		crumb = next;
-		next = crumb.next('div.crumb');
-	}
-	//still not enough, start shorting down the current folder name
-	var crumb=$('div.crumb>a').last();
-	while($('div.controls').height() > 40 && crumb.text().length > 6) {
-		var text=crumb.text();
-		text = text.substr(0,text.length-6)+'...';
-		crumb.text(text);
-	}
-
 	$(document).click(function(ev) {
 		// do not close when clicking in the dropdown
 		if ($(ev.target).closest('#new').length){
