@@ -11,6 +11,7 @@ $tmpl = new OCP\Template('files_trashbin', 'index', 'user');
 
 OCP\Util::addStyle('files', 'files');
 OCP\Util::addStyle('files_trashbin', 'trash');
+OCP\Util::addScript('files', 'breadcrumb');
 OCP\Util::addScript('files', 'filelist');
 // filelist overrides
 OCP\Util::addScript('files_trashbin', 'filelist');
@@ -34,14 +35,6 @@ if ($isIE8 && isset($_GET['dir'])){
 	exit();
 }
 
-$breadcrumb = \OCA\Files_Trashbin\Helper::makeBreadcrumb($dir);
-
-$breadcrumbNav = new OCP\Template('files_trashbin', 'part.breadcrumb', '');
-$breadcrumbNav->assign('breadcrumb', $breadcrumb);
-$breadcrumbNav->assign('baseURL', OCP\Util::linkTo('files_trashbin', 'index.php') . '?dir=');
-$breadcrumbNav->assign('home', OCP\Util::linkTo('files', 'index.php'));
-
-$tmpl->assign('breadcrumb', $breadcrumbNav->fetchPage());
 $tmpl->assign('dir', $dir);
 $tmpl->assign('disableSharing', true);
 
