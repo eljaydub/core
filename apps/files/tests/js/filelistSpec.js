@@ -18,6 +18,8 @@
 * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 *
 */
+
+/* global FileList, OC */
 describe('FileList tests', function() {
 	var routerGenerateStub, testFiles, alertStub, notificationStub,
 		pushStateStub;

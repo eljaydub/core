@@ -135,7 +135,7 @@ window.FileList = {
 	 * @return new tr element (not appended to the table)
 	 */
 	_createRow: function(fileData, options) {
-		var td, simpleSize, basename, extension,
+		var td, simpleSize, basename, extension, sizeColor,
 			icon = fileData.icon,
 			name = fileData.name,
 			type = fileData.type || 'file',
@@ -218,7 +218,7 @@ window.FileList = {
 		// size column
 		if (typeof(fileData.size) !== 'undefined') {
 			simpleSize = humanFileSize(parseInt(fileData.size, 10));
-			var sizeColor = Math.round(160-Math.pow((fileData.size/(1024*1024)),2));
+			sizeColor = Math.round(160-Math.pow((fileData.size/(1024*1024)),2));
 		} else {
 			simpleSize = t('files', 'Pending');
 		}

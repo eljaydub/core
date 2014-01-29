@@ -18,11 +18,13 @@
 * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 *
 */
+
+/* global OC */
 (function() {
 	/**
 	 * Creates an breadcrumb element in the given container
 	 */
-	BreadCrumb = function(options){
+	var BreadCrumb = function(options){
 		this.$el = $('<div class="breadcrumb"></div>');
 		options = options || {};
 		if (options.onClick) {
@@ -226,7 +228,7 @@
 
 			this.lastWidth = width;
 		}
-	}
+	};
 
 	window.BreadCrumb = BreadCrumb;
 })();

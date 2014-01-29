@@ -18,6 +18,8 @@
 * License along with this library.  If not, see <http://www.gnu.org/licenses/>.
 *
 */
+
+/* global BreadCrumb */
 describe('BreadCrumb tests', function() {
 	describe('Rendering', function() {
 		var bc;
@@ -124,7 +126,7 @@ describe('BreadCrumb tests', function() {
 	describe('Resizing', function() {
 		var bc, widthStub, dummyDir;
 		beforeEach(function() {
-			bc = new BreadCrumb(); 
+			bc = new BreadCrumb();
 			dummyDir = '/short name/longer name/looooooooooooonger/even longer long long long longer long/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/last one';
 
 			widthStub = sinon.stub($.fn, 'width');
@@ -192,7 +194,7 @@ describe('BreadCrumb tests', function() {
 			// the rest is visible
 			expect($crumbs.eq(5).hasClass('hidden')).toEqual(false);
 			expect($crumbs.eq(6).hasClass('hidden')).toEqual(false);
-		});	
+		});
 		it('Updates ellipsis on window size decrease', function() {
 			var $crumbs;
 
@@ -219,6 +221,6 @@ describe('BreadCrumb tests', function() {
 			// the rest is visible
 			expect($crumbs.eq(5).hasClass('hidden')).toEqual(true);
 			expect($crumbs.eq(6).hasClass('hidden')).toEqual(false);
-		});	
+		});
 	});
 });
