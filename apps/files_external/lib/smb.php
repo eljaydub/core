@@ -41,6 +41,15 @@ class SMB extends \OC\Files\Storage\StreamWrapper{
 		}
 	}
 
+	private function handleError($errno, $errstr, $errfile, $errline, array $errcontext) {
+		// error was suppressed with the @-operator
+		if (error_reporting() === 0) {
+			return false;
+		}
+
+		throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+	}
+
 	public function getId(){
 		return 'smb::' . $this->user . '@' . $this->host . '/' . $this->share . '/' . $this->root;
 	}
@@ -61,24 +70,33 @@ class SMB extends \OC\Files\Storage\StreamWrapper{
 	}
 
 	public function stat($path) {
-		if ( ! $path and $this->root=='/') {//mtime doesn't work for shares
-			$stat=stat($this->constructUrl($path));
-			if (empty($stat)) {
-				return false;
-			}
-			$mtime=$this->shareMTime();
-			$stat['mtime']=$mtime;
-			return $stat;
-		} else {
-			$stat = stat($this->constructUrl($path));
 
-			// smb4php can return an empty array if the connection could not be established
-			if (empty($stat)) {
-				return false;
-			}
+		// make sure that we catch all errors and warnings so that we can remove
+		// sensible data like username and password before writing it to the log
+		set_error_handler(array($this, 'handleError'), E_ALL);
 
-			return $stat;
+		try {
+			if ( ! $path and $this->root=='/') {//mtime doesn't work for shares
+				$stat=stat($this->constructUrl($path));
+				if (!empty($stat)) {
+					$mtime=$this->shareMTime();
+					$stat['mtime']=$mtime;
+				}
+			} else {
+				$stat = stat($this->constructUrl($path));
+			}
+		} catch (\Exception $e) {
+			\OCP\Util::writeLog('files_external', $e->getMessage(), \OCP\Util::ERROR);
 		}
+
+		restore_error_handler();
+
+		// smb4php can return an empty array if the connection could not be established
+		if (empty($stat)) {
+			return false;
+		}
+
+		return $stat;
 	}
 
 	/**
